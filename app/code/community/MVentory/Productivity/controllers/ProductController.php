@@ -148,26 +148,33 @@ class MVentory_Productivity_ProductController extends Mage_Core_Controller_Front
    * @param array $changed Key-based list of updated attributes
    */
   protected function _unsetValues ($product, $changed) {
+
+    $defaultStoreId = Mage_Core_Model_App::ADMIN_STORE_ID;
+    $_p = Mage::getModel('catalog/product')->setStoreId($defaultStoreId)
+              ->load($product->getId());
+
     foreach ($product->getAttributes() as $code => $attr) {
+
+      if (isset($changed[$code]))
+        continue;
+
+      // We need to find out if an attribute has a per-store value
+      // that is different than the global value
+      // Global default is store_id==0
+      if ($product->getStoreId() !== $defaultStoreId) {
+        $defaultVal = $_p->getData($code);
+        $currentVal = $product->getData($code);
+        if ($currentVal != $defaultVal)
+          continue;
+      }
+
       $allow = $code != 'gallery'
                && $attr->getIsGlobal()
                     != Mage_Catalog_Model_Resource_Eav_Attribute::SCOPE_GLOBAL
                && $attr->getIsVisible()
                && $attr->getFrontend()->getInputType();
 
-      // We need to find out if an attribute has a per-store value
-      // that is different than the global value
-      // Global default is store_id==0
-      $defaultStoreId = Mage_Core_Model_App::ADMIN_STORE_ID;
-      if ($product->getStoreId() !== $defaultStoreId) {
-        $defaultVal = Mage::getModel('catalog/product')->setStoreId($defaultStoreId)
-                        ->load($product->getId())->getData($code);
-        $currentVal = $product->getData($code);
-        if ($currentVal != $defaultVal)
-          $allow = false;
-      }
-
-      if (!$allow || isset($changed[$code]))
+      if (!$allow)
         continue;
 
       $product
