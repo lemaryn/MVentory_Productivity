@@ -40,7 +40,7 @@ class MVentory_Productivity_ProductController extends Mage_Core_Controller_Front
     if ($helper->isReviewerLogged())
     {
       //Check if save scope is set and we need to load product
-      //with dara from current store
+      //with data from current store
       $saveScope = (int) Mage::getStoreConfig(
         MVentory_Productivity_Model_Config::_PRODUCT_SAVE_SCOPE
       );
@@ -154,6 +154,18 @@ class MVentory_Productivity_ProductController extends Mage_Core_Controller_Front
                     != Mage_Catalog_Model_Resource_Eav_Attribute::SCOPE_GLOBAL
                && $attr->getIsVisible()
                && $attr->getFrontend()->getInputType();
+
+      // We need to find out if an attribute has a per-store value
+      // that is different than the global value
+      // Global default is store_id==0
+      $defaultStoreId = Mage_Core_Model_App::ADMIN_STORE_ID;
+      if ($product->getStoreId() !== $defaultStoreId) {
+        $defaultVal = Mage::getModel('catalog/product')->setStoreId($defaultStoreId)
+                        ->load($product->getId())->getData($code);
+        $currentVal = $product->getData($code);
+        if ($currentVal != $defaultVal)
+          $allow = false;
+      }
 
       if (!$allow || isset($changed[$code]))
         continue;
