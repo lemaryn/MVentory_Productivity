@@ -112,8 +112,15 @@ class MVentory_Productivity_ProductController extends Mage_Core_Controller_Front
       if ($changeAttrs || isset($qty)) {
         $product->addData($data);
 
-        if ($storeId !== false)
-          $this->_unsetValues($product, $changeAttrs);
+        if ($storeId !== false) {
+          $globalData = array();
+          if ($product->getStoreId() !== Mage_Core_Model_App::ADMIN_STORE_ID) {
+            $globalData = Mage::getModel('catalog/product')
+              ->setStoreId(Mage_Core_Model_App::ADMIN_STORE_ID)
+              ->load($product->getId())->getData();
+          }
+          $this->_unsetValues($product, $changeAttrs, $globalData);
+        }
 
         $product->save();
 
@@ -146,12 +153,9 @@ class MVentory_Productivity_ProductController extends Mage_Core_Controller_Front
    *
    * @param Mage_Catalog_Model_Product $product Product
    * @param array $changed Key-based list of updated attributes
+   * @param array $globalData Global values
    */
-  protected function _unsetValues ($product, $changed) {
-
-    $defaultStoreId = Mage_Core_Model_App::ADMIN_STORE_ID;
-    $_p = Mage::getModel('catalog/product')->setStoreId($defaultStoreId)
-              ->load($product->getId());
+  protected function _unsetValues ($product, $changed, $globalData) {
 
     foreach ($product->getAttributes() as $code => $attr) {
 
@@ -161,8 +165,8 @@ class MVentory_Productivity_ProductController extends Mage_Core_Controller_Front
       // We need to find out if an attribute has a per-store value
       // that is different than the global value
       // Global default is store_id==0
-      if ($product->getStoreId() !== $defaultStoreId) {
-        $defaultVal = $_p->getData($code);
+      if (isset($globalData[$code])) {
+        $defaultVal = $globalData[$code];
         $currentVal = $product->getData($code);
         if ($currentVal != $defaultVal)
           continue;
@@ -211,8 +215,15 @@ class MVentory_Productivity_ProductController extends Mage_Core_Controller_Front
         ->load($childId)
         ->addData($data);
 
-      if ($storeId !== false)
-        $this->_unsetValues($child, $data);
+      if ($storeId !== false) {
+        $globalData = array();
+        if ($product->getStoreId() !== Mage_Core_Model_App::ADMIN_STORE_ID) {
+          $globalData = Mage::getModel('catalog/product')
+            ->setStoreId(Mage_Core_Model_App::ADMIN_STORE_ID)
+            ->load($product->getId())->getData();
+        }
+        $this->_unsetValues($child, $data, $globalData);
+      }
 
       $child->save();
     }
