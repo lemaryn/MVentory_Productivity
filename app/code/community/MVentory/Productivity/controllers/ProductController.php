@@ -113,12 +113,7 @@ class MVentory_Productivity_ProductController extends Mage_Core_Controller_Front
         $product->addData($data);
 
         if ($storeId !== false) {
-          $globalData = array();
-          if ($product->getStoreId() !== Mage_Core_Model_App::ADMIN_STORE_ID) {
-            $globalData = Mage::getModel('catalog/product')
-              ->setStoreId(Mage_Core_Model_App::ADMIN_STORE_ID)
-              ->load($product->getId())->getData();
-          }
+          $globalData = $this->_getDefaultData($product);
           $this->_unsetValues($product, $changeAttrs, $globalData);
         }
 
@@ -162,13 +157,12 @@ class MVentory_Productivity_ProductController extends Mage_Core_Controller_Front
       if (isset($changed[$code]))
         continue;
 
-      // We need to find out if an attribute has a per-store value
-      // that is different than the global value
+      // We need to find out if an attribute has a per-store value that
+      // is different than the global value. If so, do Not mark the
+      // field as 'use default'.
       // Global default is store_id==0
       if (isset($globalData[$code])) {
-        $defaultVal = $globalData[$code];
-        $currentVal = $product->getData($code);
-        if ($currentVal != $defaultVal)
+        if ($globalData[$code] != $product->getData($code))
           continue;
       }
 
@@ -216,12 +210,7 @@ class MVentory_Productivity_ProductController extends Mage_Core_Controller_Front
         ->addData($data);
 
       if ($storeId !== false) {
-        $globalData = array();
-        if ($product->getStoreId() !== Mage_Core_Model_App::ADMIN_STORE_ID) {
-          $globalData = Mage::getModel('catalog/product')
-            ->setStoreId(Mage_Core_Model_App::ADMIN_STORE_ID)
-            ->load($product->getId())->getData();
-        }
+        $globalData = $this->_getDefaultData($child);
         $this->_unsetValues($child, $data, $globalData);
       }
 
@@ -243,5 +232,22 @@ class MVentory_Productivity_ProductController extends Mage_Core_Controller_Front
       Mage::helper('productivity/attribute')->getReplicables($configurable)
     );
   }
+
+  /**
+   * Get product data in the global scope
+   * @param $product Product
+   * @return array Global scope data
+   */
+  protected function _getDefaultData ($product) {
+    $globalData = array();
+    if ($product->getStoreId() !== Mage_Core_Model_App::ADMIN_STORE_ID
+        && $product->getId()) {
+          $globalData = Mage::getModel('catalog/product')
+            ->setStoreId(Mage_Core_Model_App::ADMIN_STORE_ID)
+            ->load($product->getId())->getData();
+    }
+    return $globalData;
+  }
+
 }
 
