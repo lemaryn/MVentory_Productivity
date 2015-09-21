@@ -23,6 +23,7 @@ class MVentory_Productivity_Block_Product_Random
   extends Mage_Catalog_Block_Product_Abstract {
 
   protected $_productsCount = null;
+  protected $_category = null;
 
   const DEFAULT_PRODUCTS_COUNT = 6;
 
@@ -70,7 +71,11 @@ class MVentory_Productivity_Block_Product_Random
                     ->getVisibleInCatalogIds();
 
     $collection = Mage::getResourceModel('catalog/product_collection')
-                    ->setVisibility($visibility);
+        ->setVisibility($visibility);
+
+    $category = (!is_null($this->getCategory())) ? Mage::getModel('catalog/category')->load($this->getCategory()) : false;
+
+    ($category)? $collection->addCategoryFilter($category) : false;
 
     $imageFilter = array('nin' => array('no_selection', ''));
 
@@ -97,10 +102,10 @@ class MVentory_Productivity_Block_Product_Random
    * @return Mage_Catalog_Block_Product_New
    */
   public function setProductsCount ($count) {
-    $this->_productsCount = $count;
+  $this->_productsCount = $count;
 
-    return $this;
-  }
+  return $this;
+}
 
   /**
    * Get how many products should be displayed at once.
@@ -113,4 +118,23 @@ class MVentory_Productivity_Block_Product_Random
 
     return $this->_productsCount;
   }
+
+  public function setCategory ($category) {
+    $this->_category = $category;
+
+    return $this;
+  }
+
+  /**
+   * Get how many products should be displayed at once.
+   *
+   * @return int
+   */
+  public function getCategory () {
+    if (empty($this->_category))
+      $this->_category = null;
+
+    return $this->_category;
+  }
+
 }
